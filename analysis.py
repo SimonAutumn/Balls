@@ -82,12 +82,12 @@ def get_history_with_condition(file, year):
 history_red_balls, history_top5, history_top4, history_after5, history_after4, history_top3, history_after3 = get_history_with_condition(original_file,2023)
 
 header = ['期号','ONE','TOW','THREE','FOUR','FIVE','SIX','红球', '篮球', '年份','重复标记', '前五标记', '前四标记', '后五标记', '后四标记', '前三标记', '后三标记']
+records = [header]
+#设定输出文件名
+outputfile = os.path.join(data_path, f'check.xlsx')
 
 # 根据2023，2024，2025，2026 进行循环
 for year in range(2023, 2027):
-    #设定输出文件名
-    outputfile = os.path.join(data_path, f'{year}.xlsx')
-    records = [header]
     # 根据条件读取原始数据读取历史记录文件中的original
     df = pd.read_excel(original_file, sheet_name='original', dtype=str)
     for index, row in df.iterrows():
@@ -133,6 +133,6 @@ for year in range(2023, 2027):
             records.append(data)
             
 
-    # 记录数据写入输出文件
-    output_excel(outputfile, records, year)
+# 记录数据写入输出文件
+output_excel(outputfile, records, 2026)
 
