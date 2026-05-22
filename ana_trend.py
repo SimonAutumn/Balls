@@ -53,85 +53,93 @@ def output_excel(file, records,yymm):
                     max_length = len(str(cell.value))
             except:
                 pass
-        adjusted_width = min(max_length + 6, 30)
+        adjusted_width = min(max_length + 4, 30)
         ws.column_dimensions[col_letter].width = adjusted_width
     wb.save(file)
 
-# 根据年份读取历史记录文件中的original sheet中的红球、年份、前五、前四、后五、后四、前三、后三数据,返回红球、前五、前四、后五、后四、前三、后三数组
+# 根据年份读取历史记录文件中的original sheet中的one to six号码数据,返回一个元组，元组中的每个元素是每个号码的数组
 def get_history_with_condition(file, year):
     df = pd.read_excel(file, sheet_name='original', dtype=str)
-    red_balls = []
-    top5 = []
-    top4 = []
-    after5 = []
-    after4 = []
-    top3 = []
-    after3 = []
-    for index, row in df.iterrows():
-        if int(row['年份']) < year:
-            red_balls.append(row['红球'])
-            top5.append(row['前五'])
-            top4.append(row['前四'])
-            after5.append(row['后五'])
-            after4.append(row['后四'])
-            top3.append(row['前三'])
-            after3.append(row['后三'])
-    return red_balls, top5, top4, after5, after4, top3, after3
+    year_num = df['年份'].astype(int)
+    df = df[year_num < year]  # 筛选出年份小于指定年份的数据记录
+    one_list = df['ONE'].tolist()
+    two_list = df['TWO'].tolist()
+    three_list = df['THREE'].tolist()
+    four_list = df['FOUR'].tolist()
+    five_list = df['FIVE'].tolist()
+    six_list = df['SIX'].tolist()
+    blue_list = df['蓝球'].tolist()
+
+    return one_list, two_list, three_list, four_list, five_list, six_list, blue_list
 
 # 根据条件读取原始数据读取历史记录文件中的original
-history_red_balls, history_top5, history_top4, history_after5, history_after4, history_top3, history_after3 = get_history_with_condition(original_file,2023)
+history_one_list, history_two_list, history_three_list, history_four_list, history_five_list, history_six_list, history_blue_list = get_history_with_condition(original_file,2020)
 
-header = ['期号','ONE','TOW','THREE','FOUR','FIVE','SIX','红球', '篮球', '年份','重复标记', '前五标记', '前四标记', '后五标记', '后四标记', '前三标记', '后三标记']
+header = ['期号','ONE','TWO','THREE','FOUR','FIVE','SIX','红球', '篮球', '年份','one_pos','two_pos','three_pos','four_pos','five_pos','six_pos','one_rate','two_rate','three_rate','four_rate','five_rate','six_rate','blue_rate','blue_pos']
+records = [header]
+#设定输出文件名
+outputfile = os.path.join(data_path, f'trend.xlsx')
 
 # 根据2023，2024，2025，2026 进行循环
-for year in range(2023, 2027):
-    #设定输出文件名
-    outputfile = os.path.join(data_path, f'{year}.xlsx')
-    records = [header]
+for year in range(2020, 2027):
     # 根据条件读取原始数据读取历史记录文件中的original
     df = pd.read_excel(original_file, sheet_name='original', dtype=str)
+    # 筛选出年份等于当前循环年份的数据记录，并对每条记录进行核对，核对内容包括每个号码出现的频率
+    df = df[df['年份'] == str(year)]
     for index, row in df.iterrows():
-        if row['年份'] == str(year):
-            red_ball = str(row['红球'])
-            top5 = row['前五']
-            top4 = row['前四']
-            after5 = row['后五']
-            after4 = row['后四']
-            top3 = row['前三']
-            after3 = row['后三']
+        one = row['ONE']
+        two = row['TWO']
+        three = row['THREE']
+        four = row['FOUR']
+        five = row['FIVE']
+        six = row['SIX']
+        blue = row['蓝球']
 
-            # 核对红球号码是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            red_ball_mark = 1 if red_ball in history_red_balls else 0
-            history_red_balls.append(red_ball)  # 将当前红球号码添加到历史记录中，供后续核对使用
+        # 将历史记录中的号码数据转换为Series对象，方便后续统计频率
+        s_one = pd.Series(history_one_list)
+        s_two = pd.Series(history_two_list)
+        s_three = pd.Series(history_three_list)
+        s_four = pd.Series(history_four_list)
+        s_five = pd.Series(history_five_list)
+        s_six = pd.Series(history_six_list)
+        s_blue = pd.Series(history_blue_list)
 
-            # 核对前五是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            top5_mark = 1 if top5 in history_top5 else 0
-            history_top5.append(top5)  # 将当前前五数据添加到历史记录中，供后续核对使用
+        s_one_rank = s_one.value_counts(normalize=True, ascending=True).round(4) # 统计one号码在历史记录中出现的频率
+        s_two_rank = s_two.value_counts(normalize=True, ascending=True).round(4) # 统计two号码在历史记录中出现的频率
+        s_three_rank = s_three.value_counts(normalize=True, ascending=True).round(4) # 统计three号码在历史记录中出现的频率
+        s_four_rank = s_four.value_counts(normalize=True, ascending=True).round(4) # 统计four号码在历史记录中出现的频率
+        s_five_rank = s_five.value_counts(normalize=True, ascending=True).round(4) # 统计five号码在历史记录中出现的频率
+        s_six_rank = s_six.value_counts(normalize=True, ascending=True).round(4) # 统计six号码在历史记录中出现的频率
+        s_blue_rank = s_blue.value_counts(normalize=True, ascending=True).round(4) # 统计blue号码在历史记录中出现的频率
+        one_rate = s_one_rank.get(one, 0)  # 计算one号码在历史记录中出现的频率，保留4位小数
+        two_rate = s_two_rank.get(two, 0)  # 计算two号码在历史记录中出现的频率，保留4位小数
+        three_rate = s_three_rank.get(three, 0)  # 计算three号码在历史记录中出现的频率，保留4位小数
+        four_rate = s_four_rank.get(four, 0)  # 计算four号码在历史记录中出现的频率，保留4位小数
+        five_rate = s_five_rank.get(five, 0)  # 计算five号码在历史记录中出现的频率，保留4位小数
+        six_rate = s_six_rank.get(six, 0)  # 计算six号码在历史记录中出现的频率，保留4位小数
+        blue_rate = s_blue_rank.get(blue, 0)  # 计算blue号码在历史记录中出现的频率，保留4位小数
 
-            # 核对前四是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            top4_mark = 1 if top4 in history_top4 else 0
-            history_top4.append(top4)  # 将当前前四数据添加到历史记录中，供后续核对使用 
+        one_pos = s_one_rank.index.get_loc(one) +1 if one in s_one_rank.index else 0  # 计算one号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
+        two_pos = s_two_rank.index.get_loc(two) +1 if two in s_two_rank.index else 0  # 计算two号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
+        three_pos = s_three_rank.index.get_loc(three) +1 if three in s_three_rank.index else 0  # 计算three号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
+        four_pos = s_four_rank.index.get_loc(four) +1 if four in s_four_rank.index else 0  # 计算four号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
+        five_pos = s_five_rank.index.get_loc(five) +1 if five in s_five_rank.index else 0  # 计算five号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
+        six_pos = s_six_rank.index.get_loc(six) +1 if six in s_six_rank.index else 0  # 计算six号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
+        blue_pos = s_blue_rank.index.get_loc(blue) +1 if blue in s_blue_rank.index else 0  # 计算blue号码在历史记录中出现的排名位置，排名从1开始，如果号码未出现过，则排名位置为0
 
-            # 核对后五是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            after5_mark = 1 if after5 in history_after5 else 0
-            history_after5.append(after5)  # 将当前后五数据添加到历史记录中，供后续核对使用
+        # 当前红码号码添加到历史记录中，供后续核对使用
+        history_one_list.append(one)
+        history_two_list.append(two)
+        history_three_list.append(three)
+        history_four_list.append(four)
+        history_five_list.append(five)
+        history_six_list.append(six)
+        history_blue_list.append(blue)
 
-            # 核对后四是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            after4_mark = 1 if after4 in history_after4 else 0
-            history_after4.append(after4)  # 将当前后四数据添加到历史记录中，供后续核对使用
-
-            # 核对前三是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            top3_mark = 1 if top3 in history_top3 else 0
-            history_top3.append(top3)  # 将当前前三数据添加到历史记录中，供后续核对使用
-
-            # 核对后三是否在历史记录中出现过，出现过则标记为1，否则标记为0
-            after3_mark = 1 if after3 in history_after3 else 0
-            history_after3.append(after3)  # 将当前后三数据添加到历史记录中，供后续核对使用
-
-            # 格式化输出数据记录
-            data = row[0:10].tolist() + [red_ball_mark, top5_mark, top4_mark, after5_mark, after4_mark, top3_mark, after3_mark]
-            records.append(data)
+        # 格式化输出数据记录
+        data = row[0:10].tolist() + [one_pos,two_pos,three_pos,four_pos,five_pos,six_pos, one_rate,two_rate,three_rate,four_rate,five_rate,six_rate,blue_pos,blue_rate]
+        records.append(data)
             
 
-    # 记录数据写入输出文件
-    output_excel(outputfile, records, year)
+# 记录数据写入输出文件
+output_excel(outputfile, records, year)
